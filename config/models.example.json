@@ -1,0 +1,76 @@
+{
+  "run_name": "multiverse-controlled-poc",
+  "repetitions": 3,
+  "max_workers": 4,
+  "temperature": 0.0,
+  "seed": 42,
+  "models": [
+    {
+      "name": "nemotron-3-nano-30b-baseline",
+      "role": "baseline",
+      "base_url": "http://baseline-gateway.internal/v1",
+      "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+      "api_key_env": "PULSAR_BASELINE_API_KEY",
+      "timeout_s": 180,
+      "input_price_per_million": null,
+      "output_price_per_million": null,
+      "metadata": {
+        "revision": "PIN_ME",
+        "precision": "BF16",
+        "runtime": "vLLM PIN_ME",
+        "hardware": "PIN_ME"
+      }
+    },
+    {
+      "name": "pulsar-16b-candidate",
+      "role": "candidate",
+      "baseline": "nemotron-3-nano-30b-baseline",
+      "base_url": "http://candidate-gateway.internal/v1",
+      "model": "MultiverseComputingCAI/Pulsar-16B-BF16",
+      "api_key_env": "PULSAR_API_KEY",
+      "timeout_s": 180,
+      "input_price_per_million": null,
+      "output_price_per_million": null,
+      "metadata": {
+        "revision": "PIN_ME",
+        "precision": "BF16",
+        "runtime": "vLLM PIN_ME",
+        "hardware": "MATCH_BASELINE"
+      }
+    },
+    {
+      "name": "gpt-oss-120b-baseline",
+      "role": "baseline",
+      "base_url": "http://baseline-gateway.internal/v1",
+      "model": "openai/gpt-oss-120b",
+      "api_key_env": "HYPERNOVA_BASELINE_API_KEY",
+      "timeout_s": 240,
+      "input_price_per_million": null,
+      "output_price_per_million": null,
+      "metadata": {
+        "revision": "PIN_ME",
+        "reasoning_effort": "high",
+        "runtime": "vLLM PIN_ME",
+        "hardware": "PIN_ME"
+      }
+    },
+    {
+      "name": "hypernova-60b-2605-candidate",
+      "role": "candidate",
+      "baseline": "gpt-oss-120b-baseline",
+      "base_url": "http://candidate-gateway.internal/v1",
+      "model": "MultiverseComputingCAI/Hypernova-60B-2605",
+      "api_key_env": "HYPERNOVA_API_KEY",
+      "timeout_s": 240,
+      "input_price_per_million": null,
+      "output_price_per_million": null,
+      "metadata": {
+        "revision": "PIN_ME",
+        "reasoning_effort": "high",
+        "runtime": "vLLM PIN_ME",
+        "hardware": "MATCH_BASELINE"
+      }
+    }
+  ]
+}
+
