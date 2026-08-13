@@ -10,3 +10,11 @@ venv/
 results/real_*.json
 results/_*.json
 .env
+
+# Full run bundles. One Stage A run is ~39 MB of raw model output, and every
+# rerun would add another. The demo_* bundles are small, labelled synthetic and
+# kept as worked examples; results/stage_a_gate.json is kept deliberately as a
+# reference run. Everything else here is a run artefact, not source.
+results/*
+!results/demo_*.json
+!results/stage_a_gate.json
