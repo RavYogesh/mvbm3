@@ -1,0 +1,268 @@
+<title>Validation harness — architecture on one page</title>
+<style>
+  :root {
+    --ground:#F4F6F8; --surface:#FFFFFF; --ink:#141A20; --muted:#59646F;
+    --line:#D3DAE1; --accent:#1F5C8B; --accent-soft:#E8F0F6; --accent-line:#9EC2DC;
+    --pass:#1D6B47; --block:#A32B21; --inc:#8A5A00;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0E1216; --surface:#161C22; --ink:#E4E9EE; --muted:#94A1AD;
+      --line:#2A343D; --accent:#6FB0DF; --accent-soft:#14222E; --accent-line:#33566F;
+      --pass:#4FB985; --block:#E5766A; --inc:#D9A340;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0E1216; --surface:#161C22; --ink:#E4E9EE; --muted:#94A1AD;
+    --line:#2A343D; --accent:#6FB0DF; --accent-soft:#14222E; --accent-line:#33566F;
+    --pass:#4FB985; --block:#E5766A; --inc:#D9A340;
+  }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans);
+         margin:0; padding:40px 28px 56px; line-height:1.5; }
+  .wrap { max-width:1180px; margin:0 auto; }
+
+  .eyebrow { font-family:var(--mono); font-size:11.5px; letter-spacing:.14em;
+             text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  h1 { font-size:clamp(24px,3.2vw,34px); line-height:1.15; letter-spacing:-.02em;
+       margin:0 0 10px; text-wrap:balance; font-weight:650; }
+  .standfirst { color:var(--muted); font-size:15.5px; max-width:66ch; margin:0 0 6px; }
+  .meta { font-family:var(--mono); font-size:11.5px; color:var(--muted);
+          margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line); }
+
+  figure { margin:30px 0 0; }
+  .canvas { overflow-x:auto; background:var(--surface);
+            border:1px solid var(--line); border-radius:8px; padding:18px; }
+  svg { display:block; width:100%; min-width:900px; height:auto; color:var(--ink); }
+  figcaption { color:var(--muted); font-size:13.5px; margin-top:14px; max-width:78ch; }
+
+  /* SVG element roles */
+  .box     { fill:var(--surface); stroke:var(--line); stroke-width:1.25; }
+  .box-acc { fill:var(--accent-soft); stroke:var(--accent-line); stroke-width:1.25; }
+  .box-stop{ fill:none; stroke:var(--block); stroke-width:1.25; stroke-dasharray:5 4; }
+  .band    { font-family:var(--mono); font-size:11.5px; letter-spacing:.13em;
+             fill:var(--muted); text-transform:uppercase; }
+  .ttl     { font-family:var(--mono); font-size:15px; fill:var(--ink); font-weight:600; }
+  .ttl-acc { font-family:var(--mono); font-size:15px; fill:var(--accent); font-weight:600; }
+  .ttl-stop{ font-family:var(--mono); font-size:15px; fill:var(--block); font-weight:600; }
+  .txt     { font-family:var(--sans); font-size:13px; fill:var(--muted); }
+  .txt-ink { font-family:var(--sans); font-size:13px; fill:var(--ink); }
+  .out     { font-family:var(--mono); font-size:12px; fill:var(--accent); }
+  .edge    { fill:none; stroke:currentColor; stroke-width:1.4; }
+  .edge-d  { fill:none; stroke:var(--block); stroke-width:1.4; stroke-dasharray:5 4; }
+  .edge-g  { fill:none; stroke:var(--accent-line); stroke-width:1.4; stroke-dasharray:5 4; }
+  .elabel  { font-family:var(--mono); font-size:11.5px; fill:var(--muted); }
+  .note    { font-family:var(--sans); font-size:12px; fill:var(--muted); font-style:italic; }
+
+  .keys { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+          gap:18px 26px; margin:34px 0 0; padding-top:22px; border-top:1px solid var(--line); }
+  .key h3 { font-family:var(--mono); font-size:12px; letter-spacing:.06em; margin:0 0 5px;
+            color:var(--ink); font-weight:600; }
+  .key p { margin:0; font-size:13.5px; color:var(--muted); }
+  .key.pass h3 { color:var(--pass); } .key.block h3 { color:var(--block); }
+  .key.inc h3 { color:var(--inc); }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">GenAI Platform Engineering · model validation</p>
+  <h1>Compressed-model validation harness</h1>
+  <p class="standfirst">
+    How a vendor claim becomes a defensible verdict: what runs, in what order, what each
+    stage measures, and where the three possible answers come from.
+  </p>
+
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 1240 950" role="img"
+           aria-label="Flow diagram of the validation harness in six stages. Stage zero calibrates the harness itself and blocks everything downstream if it fails. Stage one supplies the dataset, agentic scenarios and load profile. Stage two sends every case through one adapter to both the candidate and its uncompressed baseline under identical settings. Stage three measures through three suites: single-turn correctness, multi-turn agentic trajectories, and a concurrency sweep. Stage four applies non-inferiority statistics against margins fixed in advance. Stage five emits one of three verdicts: pass, block, or inconclusive.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="ar-stop" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--block)"/>
+          </marker>
+          <marker id="ar-acc" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-line)"/>
+          </marker>
+        </defs>
+
+        <!-- ══ 0 · CALIBRATE ══ -->
+        <text class="band" x="36" y="22">0 — calibrate the instrument</text>
+        <rect class="box-acc" x="36" y="34" width="620" height="86" rx="6"/>
+        <text class="ttl-acc" x="56" y="61">validate-harness</text>
+        <text class="txt" x="56" y="83">sensitivity · specificity · underpowered guard · grader self-checks</text>
+        <text class="txt" x="56" y="104">injects a known degradation and requires the gate to catch it</text>
+
+        <line class="edge-d" x1="660" y1="77" x2="710" y2="77" marker-end="url(#ar-stop)"/>
+        <text class="elabel" x="685" y="68" text-anchor="middle">fail</text>
+
+        <rect class="box-stop" x="716" y="34" width="488" height="86" rx="6"/>
+        <text class="ttl-stop" x="736" y="61">stop — nothing downstream is evidence</text>
+        <text class="txt" x="736" y="83">a harness that has never been shown to fail a bad model</text>
+        <text class="txt" x="736" y="104">does not stay silent; it reports a confident number</text>
+
+        <line class="edge" x1="346" y1="120" x2="346" y2="158" marker-end="url(#ar)"/>
+        <text class="elabel" x="356" y="144">pass</text>
+
+        <!-- ══ 1 · SOURCES ══ -->
+        <text class="band" x="36" y="152">1 — sources</text>
+        <rect class="box" x="36"  y="166" width="373" height="88" rx="6"/>
+        <text class="ttl"  x="56"  y="193">bank_eval_v1.jsonl</text>
+        <text class="txt"  x="56"  y="215">66 paired cases · 12 task families</text>
+        <text class="txt"  x="56"  y="235">refusal cases twinned: harmful + benign</text>
+
+        <rect class="box" x="433" y="166" width="373" height="88" rx="6"/>
+        <text class="ttl"  x="453" y="193">agentic_scenarios.json</text>
+        <text class="txt"  x="453" y="215">12 scenarios · seeded world state</text>
+        <text class="txt"  x="453" y="235">amounts cluster on the approval ceilings</text>
+
+        <rect class="box" x="830" y="166" width="373" height="88" rx="6"/>
+        <text class="ttl"  x="850" y="193">load profile</text>
+        <text class="txt"  x="850" y="215">fixed prompt shape, held constant</text>
+        <text class="txt"  x="850" y="235">concurrency 1 / 4 / 16 / 64</text>
+
+        <line class="edge" x1="222"  y1="254" x2="222"  y2="272"/>
+        <line class="edge" x1="619"  y1="254" x2="619"  y2="272"/>
+        <line class="edge" x1="1016" y1="254" x2="1016" y2="272"/>
+        <line class="edge" x1="222"  y1="272" x2="1016" y2="272"/>
+        <line class="edge" x1="620"  y1="272" x2="620"  y2="302" marker-end="url(#ar)"/>
+
+        <!-- ══ 2 · PAIRED EXECUTION ══ -->
+        <text class="band" x="36" y="296">2 — paired execution</text>
+        <rect class="box" x="36" y="308" width="340" height="70" rx="6"/>
+        <text class="ttl" x="56" y="335">candidate</text>
+        <text class="txt" x="56" y="357">Pulsar 16B · HyperNova 60B</text>
+
+        <rect class="box-acc" x="450" y="308" width="340" height="70" rx="6"/>
+        <text class="ttl-acc" x="620" y="335" text-anchor="middle">providers.py</text>
+        <text class="txt" x="620" y="357" text-anchor="middle">streaming · retry with jitter</text>
+
+        <rect class="box" x="864" y="308" width="340" height="70" rx="6"/>
+        <text class="ttl" x="884" y="335">baseline</text>
+        <text class="txt" x="884" y="357">Nemotron-3-Nano-30B · gpt-oss-120b</text>
+
+        <line class="edge" x1="448" y1="343" x2="382" y2="343" marker-end="url(#ar)"/>
+        <line class="edge" x1="792" y1="343" x2="858" y2="343" marker-end="url(#ar)"/>
+        <text class="note" x="620" y="396" text-anchor="middle">identical prompt, decode settings and seed — the pairing is what makes the comparison valid</text>
+
+        <rect class="box" x="36" y="408" width="1168" height="56" rx="6"/>
+        <text class="txt-ink" x="56" y="432">records per call · ttft_s · latency_s · prompt / completion / <tspan font-weight="600">reasoning</tspan> tokens · tool calls · attempts</text>
+        <text class="txt" x="56" y="453">error class: model vs infrastructure — infrastructure failures are dropped from the pair, never scored zero</text>
+
+        <line class="edge" x1="620" y1="464" x2="620" y2="488" marker-end="url(#ar)"/>
+
+        <!-- ══ 3 · MEASURE ══ -->
+        <text class="band" x="36" y="482">3 — measure</text>
+        <rect class="box" x="36"  y="494" width="373" height="212" rx="6"/>
+        <text class="ttl" x="56"  y="521">single-turn correctness</text>
+        <text class="txt" x="56"  y="547">10 deterministic graders</text>
+        <text class="txt" x="56"  y="568">SQL executes against sqlite,</text>
+        <text class="txt" x="56"  y="588">so a plausible-but-wrong query fails</text>
+        <text class="txt" x="56"  y="613">refusal is scored two-sided:</text>
+        <text class="txt" x="56"  y="633">over-refusal fails like under-refusal</text>
+        <text class="out" x="56"  y="682">→ paired scores on (case_id, repetition)</text>
+
+        <rect class="box" x="433" y="494" width="373" height="212" rx="6"/>
+        <text class="ttl" x="453" y="521">agentic — tools execute</text>
+        <text class="txt" x="453" y="547">5 agents, tool access scoped</text>
+        <text class="txt" x="453" y="568">no agent can both approve and spend</text>
+        <text class="txt" x="453" y="593">policy gates enforced in code:</text>
+        <text class="txt" x="453" y="613">a blocked call returns to the model</text>
+        <text class="txt" x="453" y="633">and is recorded as a violation</text>
+        <text class="txt" x="453" y="658">assertions read world state, not text</text>
+        <text class="out" x="453" y="682">→ success · violations · turn + cost inflation</text>
+
+        <rect class="box" x="830" y="494" width="373" height="212" rx="6"/>
+        <text class="ttl" x="850" y="521">load — concurrency sweep</text>
+        <text class="txt" x="850" y="547">system throughput = tokens ÷ wall-clock</text>
+        <text class="txt" x="850" y="568">per-stream decode rate is reported</text>
+        <text class="txt" x="850" y="588">but never gated — different quantity</text>
+        <text class="txt" x="850" y="613">every figure carries its concurrency</text>
+        <text class="txt" x="850" y="633">locates the saturation knee</text>
+        <text class="out" x="850" y="682">→ p95 / p99 latency · p95 TTFT</text>
+
+        <line class="edge" x1="222"  y1="706" x2="222"  y2="724"/>
+        <line class="edge" x1="619"  y1="706" x2="619"  y2="724"/>
+        <line class="edge" x1="1016" y1="706" x2="1016" y2="724"/>
+        <line class="edge" x1="222"  y1="724" x2="1016" y2="724"/>
+        <line class="edge" x1="430"  y1="724" x2="430"  y2="750" marker-end="url(#ar)"/>
+
+        <!-- ══ 4 · ANALYSE ══ -->
+        <text class="band" x="36" y="744">4 — analyse</text>
+        <rect class="box" x="36" y="756" width="790" height="80" rx="6"/>
+        <text class="ttl" x="56" y="783">stats.py — non-inferiority</text>
+        <text class="txt" x="56" y="805">one-sided lower bound vs margin · exact McNemar · observed power · required_n · Holm</text>
+        <text class="txt-ink" x="56" y="826">H₀: candidate ≤ baseline − margin — the model IS worse until the candidate proves otherwise</text>
+
+        <rect class="box-acc" x="864" y="756" width="340" height="80" rx="6"/>
+        <text class="ttl-acc" x="884" y="783">acceptance_gates.json</text>
+        <text class="txt" x="884" y="805">margins, α and power fixed</text>
+        <text class="txt" x="884" y="826">in advance of any result</text>
+        <line class="edge-g" x1="860" y1="796" x2="832" y2="796" marker-end="url(#ar-acc)"/>
+
+        <line class="edge" x1="430" y1="836" x2="430" y2="852"/>
+        <line class="edge" x1="222" y1="852" x2="1016" y2="852"/>
+        <line class="edge" x1="222"  y1="852" x2="222"  y2="872" marker-end="url(#ar)"/>
+        <line class="edge" x1="619"  y1="852" x2="619"  y2="872" marker-end="url(#ar)"/>
+        <line class="edge" x1="1016" y1="852" x2="1016" y2="872" marker-end="url(#ar)"/>
+
+        <!-- ══ 5 · VERDICT ══ -->
+        <rect class="box" x="36"  y="876" width="373" height="58" rx="6"/>
+        <text class="ttl" x="56"  y="901" fill="var(--pass)">PASS</text>
+        <text class="txt" x="56"  y="922">bound clears the margin, with power to spare</text>
+
+        <rect class="box" x="433" y="876" width="373" height="58" rx="6"/>
+        <text class="ttl" x="453" y="901" fill="var(--block)">BLOCK</text>
+        <text class="txt" x="453" y="922">degradation past the margin, or a design floor broken</text>
+
+        <rect class="box" x="830" y="876" width="373" height="58" rx="6"/>
+        <text class="ttl" x="850" y="901" fill="var(--inc)">INCONCLUSIVE</text>
+        <text class="txt" x="850" y="922">could not have detected a breach — not a soft pass</text>
+      </svg>
+    </div>
+    <figcaption>
+      The pipeline reads top to bottom. Calibration sits above it because it gates everything:
+      until the harness has been shown to catch a degradation it was given on purpose, no number
+      below it can be interpreted. Every case runs through one adapter to both models under
+      identical settings, so the analysis compares a matched pair rather than two independent runs.
+    </figcaption>
+  </figure>
+
+  <div class="keys">
+    <div class="key">
+      <h3>Why three suites, not one</h3>
+      <p>They measure incompatible things. Grading wants varied prompt shapes; throughput
+         measurement needs one held constant. Correctness is scored per item; agentic behaviour
+         only exists across a trajectory.</p>
+    </div>
+    <div class="key">
+      <h3>Why absolute margins</h3>
+      <p>A retention ratio floats the tolerance with task difficulty — at 97% retention an easy
+         family may drop 2.9 points while a hard one may drop 1.2. Risk tier should set the
+         tolerance, not incidental difficulty.</p>
+    </div>
+    <div class="key">
+      <h3>Why gates live in code</h3>
+      <p>A prompt is a request; a gate is an auditable control. Because the environment blocks
+         and records, the report can say the model attempted an unauthorised money movement
+         N times and the control held N times.</p>
+    </div>
+    <div class="key inc">
+      <h3>Why a third verdict</h3>
+      <p>“It is worse” and “we could not tell” call for different actions — stop, versus collect
+         more samples. Collapsing them is how a team quietly loosens a margin so an underpowered
+         run passes.</p>
+    </div>
+  </div>
+
+  <p class="meta">
+    github.com/RavYogesh/mvbm3 · benchmark v2.0.0 · 29 tests, 10 calibration checks passing ·
+    demo bundles are synthetic and labelled as such
+  </p>
+</div>
