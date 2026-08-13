@@ -54,13 +54,17 @@ RENDER_PAGE = """<!doctype html>
          margin:20px 0 0; padding-top:12px; border-top:1px solid var(--line); }}
 </style></head>
 <body><div class="plate">
-  <p class="hd">GenAI Platform Engineering &middot; model validation</p>
-  <p class="ti">Compressed-model validation harness</p>
+  {chrome_top}
   <div class="canvas">{svg}</div>
-  <p class="ft">github.com/RavYogesh/mvbm3 &middot; benchmark v2.0.0 &middot;
-     verdicts: PASS / BLOCK / INCONCLUSIVE &middot; demo bundles are synthetic and labelled as such</p>
+  {chrome_bottom}
 </div></body></html>
 """
+
+PLATE_TOP = ('<p class="hd">GenAI Platform Engineering &middot; model validation</p>'
+             '<p class="ti">Compressed-model validation harness</p>')
+PLATE_BOTTOM = ('<p class="ft">github.com/RavYogesh/mvbm3 &middot; benchmark v2.0.0 &middot; '
+                'verdicts: PASS / BLOCK / INCONCLUSIVE &middot; demo bundles are synthetic '
+                'and labelled as such</p>')
 
 
 def find_browser() -> str:
@@ -108,6 +112,11 @@ def main() -> None:
     parser.add_argument("--quality", type=int, default=95)
     parser.add_argument("--width", type=int, default=1240, help="CSS width of the plate")
     parser.add_argument("--out", default=str(OUT_JPG))
+    parser.add_argument(
+        "--bare", action="store_true",
+        help="omit the title and footer -- for embedding under a slide heading that "
+             "already carries them, where the baked-in plate would just duplicate it",
+    )
     args = parser.parse_args()
 
     style, svg = extract(SOURCE.read_text(encoding="utf-8"))
@@ -117,7 +126,14 @@ def main() -> None:
         tmp_path = Path(tmp)
         page = tmp_path / "render.html"
         page.write_text(
-            RENDER_PAGE.format(style=style, svg=svg, width=args.width), encoding="utf-8"
+            RENDER_PAGE.format(
+                style=style,
+                svg=svg,
+                width=args.width,
+                chrome_top="" if args.bare else PLATE_TOP,
+                chrome_bottom="" if args.bare else PLATE_BOTTOM,
+            ),
+            encoding="utf-8",
         )
         png = tmp_path / "shot.png"
 
