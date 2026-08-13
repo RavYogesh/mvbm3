@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.DS_Store
+
+# Real runs carry endpoint identifiers, model revisions and raw model output.
+# Only the clearly-labelled synthetic demo bundles belong in version control.
+results/real_*.json
+results/_*.json
+.env

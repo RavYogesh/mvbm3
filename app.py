@@ -134,15 +134,45 @@ with overview:
     cols = st.columns(5)
     if comparison:
         metrics = comparison["metrics"]
+        aggregate = next(
+            (p for p in metrics["preservation"] if p["name"] == "aggregate"), {}
+        )
+        safety = metrics["critical_safety_pass_rate"]
         cols[0].metric("Decision gate", comparison["gates"]["overall"])
-        cols[1].metric("Quality retention", f"{(metrics['quality_retention'] or 0):.1%}")
-        cols[2].metric("p95 latency gain", f"{(metrics['latency_improvement'] or 0):.1%}")
-        cols[3].metric("Throughput gain", f"{(metrics['throughput_improvement'] or 0):.1%}")
-        cols[4].metric("Critical safety", f"{metrics['critical_safety_pass_rate']:.1%}")
+        cols[1].metric(
+            "Aggregate quality delta",
+            f"{aggregate.get('delta', 0):+.3f}",
+            help=f"one-sided lower bound {aggregate.get('lower_bound', 0):+.3f} "
+                 f"against a margin of -{aggregate.get('margin', 0):.2f}",
+        )
+        cols[2].metric("p95 latency gain", f"{(metrics['p95_latency_improvement'] or 0):.1%}")
+        cols[3].metric(
+            "System throughput gain",
+            f"{(metrics['system_throughput_improvement'] or 0):.1%}",
+            help="measured against wall-clock elapsed, not the sum of request latencies",
+        )
+        cols[4].metric(
+            "Critical safety",
+            "n/a" if safety is None else f"{safety:.1%}",
+            delta=f"-{metrics['over_refusals']} over-refusals" if metrics["over_refusals"] else None,
+            delta_color="inverse",
+        )
         st.subheader("Gate contract")
-        checks = pd.DataFrame(comparison["gates"]["checks"])
-        st.dataframe(checks, use_container_width=True, hide_index=True)
-    st.caption("A NOT_MEASURED control blocks production approval. It is not treated as a pass.")
+        st.dataframe(
+            pd.DataFrame(comparison["gates"]["checks"]), use_container_width=True, hide_index=True
+        )
+    if result.get("design_checks", {}).get("findings"):
+        st.subheader("Experimental design")
+        st.dataframe(
+            pd.DataFrame(result["design_checks"]["findings"]),
+            use_container_width=True,
+            hide_index=True,
+        )
+    st.caption(
+        "Three verdicts, not two. INCONCLUSIVE means the run could not have detected a breach "
+        "of the margin even if one existed -- it is not a soft pass, and NOT_MEASURED blocks "
+        "approval rather than counting as one."
+    )
 
 with dispatch:
     st.subheader("Agent lanes")
@@ -172,9 +202,16 @@ with quality:
     fig.update_layout(xaxis_title="", yaxis_title="Mean score", legend_title="")
     st.plotly_chart(fig, use_container_width=True)
     if result["comparisons"]:
-        retention = result["comparisons"][0]["metrics"]["task_retention"]
-        retention_df = pd.DataFrame([{"task": k, "retention": v} for k, v in retention.items()])
-        st.dataframe(retention_df, use_container_width=True, hide_index=True)
+        st.subheader("Non-inferiority by family")
+        preservation = pd.DataFrame(result["comparisons"][0]["metrics"]["preservation"])[
+            ["name", "n", "delta", "lower_bound", "margin", "observed_power", "required_n", "status"]
+        ]
+        st.dataframe(preservation, use_container_width=True, hide_index=True)
+        st.caption(
+            "Preservation is accepted only when the one-sided lower bound clears the margin AND "
+            "the comparison had the power to detect a breach. Where observed_power is low, "
+            "required_n is the case count that margin actually demands."
+        )
 
 with efficiency:
     left, right = st.columns(2)

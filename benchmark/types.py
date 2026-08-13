@@ -49,6 +49,20 @@ class Generation:
     finish_reason: str = "stop"
     raw: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+    # Time to first token. Only meaningful on a streamed request; a blocking
+    # call cannot separate prefill from decode, so it is left at 0.0 rather
+    # than being filled with end-to-end latency wearing a different name.
+    ttft_s: float = 0.0
+    # Reasoning tokens are billed as output tokens. Both models under test are
+    # reasoning models, so omitting these understates the cost of whichever
+    # model thinks longer -- which is precisely the comparison being made.
+    reasoning_tokens: int = 0
+    attempts: int = 1
+    infrastructure_error: bool = False
+
+    @property
+    def billed_output_tokens(self) -> int:
+        return self.output_tokens + self.reasoning_tokens
 
 
 @dataclass
@@ -68,6 +82,13 @@ class CaseResult:
     cost_usd: float | None
     grade_details: dict[str, Any]
     error: str | None = None
+    ttft_s: float = 0.0
+    reasoning_tokens: int = 0
+    attempts: int = 1
+    # Distinguishes "the endpoint failed" from "the model was wrong". Only the
+    # second is a quality signal; conflating them lets a flaky gateway block a
+    # good model, and lets a bad model hide behind gateway noise.
+    infrastructure_error: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

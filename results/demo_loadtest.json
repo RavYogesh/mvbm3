@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0",
+  "synthetic_demo": true,
+  "levels": [
+    1,
+    4,
+    16
+  ],
+  "requests_per_level": 24,
+  "prompt_tokens": 512,
+  "max_tokens": 256,
+  "by_model": {
+    "mock-uncompressed-baseline": [
+      {
+        "concurrency": 1,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 1.3297,
+        "system_throughput_tokens_s": 18.05,
+        "requests_per_s": 18.049,
+        "decode_tokens_s_per_stream": 18.26,
+        "p50_latency_s": 0.0545,
+        "p95_latency_s": 0.058,
+        "p99_latency_s": 0.058,
+        "mean_latency_s": 0.0547,
+        "p50_ttft_s": 0.0191,
+        "p95_ttft_s": 0.0203,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 24
+      },
+      {
+        "concurrency": 4,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 0.3381,
+        "system_throughput_tokens_s": 70.98,
+        "requests_per_s": 70.984,
+        "decode_tokens_s_per_stream": 18.26,
+        "p50_latency_s": 0.0545,
+        "p95_latency_s": 0.058,
+        "p99_latency_s": 0.058,
+        "mean_latency_s": 0.0547,
+        "p50_ttft_s": 0.0191,
+        "p95_ttft_s": 0.0203,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 24
+      },
+      {
+        "concurrency": 16,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 0.1185,
+        "system_throughput_tokens_s": 202.6,
+        "requests_per_s": 202.598,
+        "decode_tokens_s_per_stream": 18.26,
+        "p50_latency_s": 0.0545,
+        "p95_latency_s": 0.058,
+        "p99_latency_s": 0.058,
+        "mean_latency_s": 0.0547,
+        "p50_ttft_s": 0.0191,
+        "p95_ttft_s": 0.0203,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 24
+      }
+    ],
+    "mock-compressed-candidate": [
+      {
+        "concurrency": 1,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 0.8485,
+        "system_throughput_tokens_s": 75.43,
+        "requests_per_s": 28.285,
+        "decode_tokens_s_per_stream": 76.74,
+        "p50_latency_s": 0.0345,
+        "p95_latency_s": 0.038,
+        "p99_latency_s": 0.038,
+        "mean_latency_s": 0.0348,
+        "p50_ttft_s": 0.0121,
+        "p95_ttft_s": 0.0133,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 64
+      },
+      {
+        "concurrency": 4,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 0.2177,
+        "system_throughput_tokens_s": 294.01,
+        "requests_per_s": 110.254,
+        "decode_tokens_s_per_stream": 76.74,
+        "p50_latency_s": 0.0345,
+        "p95_latency_s": 0.038,
+        "p99_latency_s": 0.038,
+        "mean_latency_s": 0.0348,
+        "p50_ttft_s": 0.0121,
+        "p95_ttft_s": 0.0133,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 64
+      },
+      {
+        "concurrency": 16,
+        "requests": 24,
+        "completed": 24,
+        "errors": 0,
+        "wall_clock_s": 0.0766,
+        "system_throughput_tokens_s": 835.08,
+        "requests_per_s": 313.156,
+        "decode_tokens_s_per_stream": 76.74,
+        "p50_latency_s": 0.0345,
+        "p95_latency_s": 0.038,
+        "p99_latency_s": 0.038,
+        "mean_latency_s": 0.0348,
+        "p50_ttft_s": 0.0121,
+        "p95_ttft_s": 0.0133,
+        "ttft_measured": true,
+        "reasoning_tokens": 0,
+        "billed_output_tokens": 64
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "candidate": "mock-compressed-candidate",
+      "baseline": "mock-uncompressed-baseline",
+      "per_level": [
+        {
+          "concurrency": 1,
+          "system_throughput_improvement": 3.1789,
+          "p95_latency_improvement": 0.3448,
+          "p99_latency_improvement": 0.3448,
+          "p95_ttft_improvement": 0.3448
+        },
+        {
+          "concurrency": 4,
+          "system_throughput_improvement": 3.1422,
+          "p95_latency_improvement": 0.3448,
+          "p99_latency_improvement": 0.3448,
+          "p95_ttft_improvement": 0.3448
+        },
+        {
+          "concurrency": 16,
+          "system_throughput_improvement": 3.1218,
+          "p95_latency_improvement": 0.3448,
+          "p99_latency_improvement": 0.3448,
+          "p95_ttft_improvement": 0.3448
+        }
+      ],
+      "candidate_knee": {
+        "concurrency": 16,
+        "system_throughput_tokens_s": 835.08,
+        "p95_latency_s": 0.038
+      },
+      "baseline_knee": {
+        "concurrency": 16,
+        "system_throughput_tokens_s": 202.6,
+        "p95_latency_s": 0.058
+      }
+    }
+  ],
+  "notes": "system_throughput is measured against wall-clock elapsed and is the quantity the vendor throughput claim refers to. decode_tokens_s_per_stream is reported for context and is never gated -- it does not change materially with load, so it cannot answer a capacity question."
+}
