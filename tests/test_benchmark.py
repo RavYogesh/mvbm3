@@ -241,11 +241,23 @@ class OrchestratorTests(unittest.TestCase):
 
     def test_declared_sample_size_floors_are_enforced(self) -> None:
         """These floors were in the gates config from the start but no code read
-        them, so the config promised a discipline the harness did not apply."""
-        result = EvalOrchestrator(_mock_config(), GATES).run(load_dataset(DATASET))
+        them, so the config promised a discipline the harness did not apply.
+
+        Asserted in BOTH directions against a controlled slice rather than
+        against whatever the shipped dataset happens to contain -- a test that
+        breaks when the data improves is testing the data, not the code."""
+        cases = load_dataset(DATASET)
+
+        thin = [c for c in cases if c.task == "tool_call"][:8]
+        result = EvalOrchestrator(_mock_config(), GATES).run(thin)
         self.assertEqual(result["design_checks"]["status"], "FAIL")
         checks = {c["check"] for c in result["design_checks"]["findings"]}
         self.assertTrue(any(c.startswith("minimum_cases_per_task") for c in checks))
+
+        adequate = EvalOrchestrator(_mock_config(), GATES).run(cases)
+        floors = [f for f in adequate["design_checks"]["findings"]
+                  if f["check"].startswith("minimum_cases_per_task")]
+        self.assertEqual(floors, [], "shipped dataset should clear the per-family floor")
 
     def test_throughput_is_reported_against_wall_clock(self) -> None:
         result = EvalOrchestrator(_mock_config(), GATES).run(load_dataset(DATASET)[:12])
@@ -257,29 +269,33 @@ class OrchestratorTests(unittest.TestCase):
             summary["system_throughput_tokens_s"], summary["decode_tokens_s_per_stream"], places=3
         )
 
-    def test_quality_verdicts_distinguish_degraded_from_undetermined(self) -> None:
+    def test_quality_verdicts_respond_to_power_not_just_to_quality(self) -> None:
         """Three outcomes, not two. 'It is worse' and 'we could not tell' call
         for different actions -- stop versus collect more samples -- and
         collapsing them is how a team ends up loosening a margin to make an
         underpowered run pass.
 
-        Sample-size enforcement is switched off here to isolate the quality
-        verdict; with it on, the starter dataset legitimately BLOCKs on design
-        grounds regardless of model quality."""
+        The distinguishing input is SAMPLE SIZE, so that is what varies here:
+        the same clean model returns INCONCLUSIVE on a thin slice and PASS on
+        an adequately powered one.
+
+        Sample-size enforcement is off so the quality verdict is isolated; with
+        it on, a thin slice blocks on design grounds before quality is reached.
+        """
         gates = dict(GATES, enforce_sample_size=False)
+        cases = load_dataset(DATASET)
+        thin = [c for c in cases if c.task == "tool_call"][:40]
 
-        def quality_statuses(rate: float | None) -> set[str]:
-            result = EvalOrchestrator(_mock_config(rate), gates).run(load_dataset(DATASET))
-            return {
-                c["status"]
-                for c in result["comparisons"][0]["gates"]["checks"]
-                if c["name"].startswith("preservation")
-            }
+        def quality(rate, subset):
+            result = EvalOrchestrator(_mock_config(rate), gates).run(subset)
+            return {c["status"] for c in result["comparisons"][0]["gates"]["checks"]
+                    if c["name"].startswith("preservation")}
 
-        self.assertIn("FAIL", quality_statuses(0.30))
-        clean = quality_statuses(0.0)
-        self.assertNotIn("FAIL", clean)
-        self.assertIn(Verdict.INCONCLUSIVE.value, clean)
+        self.assertIn(Verdict.INCONCLUSIVE.value, quality(0.0, thin))
+        powered_clean = quality(0.0, cases)
+        self.assertIn("PASS", powered_clean)
+        self.assertNotIn("FAIL", powered_clean)
+        self.assertIn("FAIL", quality(0.30, cases))
 
 
 class LoadTestTests(unittest.TestCase):

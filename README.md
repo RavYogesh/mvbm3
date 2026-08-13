@@ -111,7 +111,7 @@ The burden of proof sits with the candidate. Preservation is accepted only when 
 
 ### The sample-size constraint
 
-At a discordance rate of 0.15, demonstrating non-inferiority needs:
+Compute is not the constraint — a full Stage A run is roughly $7 of tokens and about an hour of wall-clock at concurrency 32. Authoring is. At a discordance rate of 0.15, demonstrating non-inferiority needs:
 
 | Margin | Paired cases per family |
 |---|---|
@@ -120,9 +120,25 @@ At a discordance rate of 0.15, demonstrating non-inferiority needs:
 | 0.02 | 2,319 |
 | 0.01 | 9,274 |
 
-**The bundled 66-case starter set cannot support these margins.** Not "is hard to" — cannot, arithmetically. The harness enforces the `minimum_cases_per_task` floor the config declares, prints `required_n` beside every verdict, and returns `INCONCLUSIVE` rather than a pass it cannot defend. Expand the dataset before a formal decision.
+The shipped dataset is built to clear the 0.05 margin: **371 cases per family, 4,450 in total**, assembled from the hand-authored core plus templated generation.
+
+```powershell
+python data/build_dataset.py --scale stage-a   # 371/family  -- screens at 0.05
+python data/build_dataset.py --scale stage-b   # 2,319/family -- gates at 0.02
+python data/build_dataset.py --scale tight     # 9,274/family -- gates at 0.01
+```
+
+Curated cases carry construct validity — they were written against real servicing language. Generation carries statistical power, and nothing else: **a generated set measures the template, not the business.** Both are kept, and every case is stamped with its provenance so the two can never be conflated in analysis. A sealed holdout sampled from real de-identified traffic, owned by an independent validation team, remains a separate and necessary workstream.
+
+Nothing is written until every case has been validated: each is answered by an oracle and must score 1.0. A case its own reference answer cannot pass is broken — and once shipped it would be charged against every model forever as a capability failure. That check found a live defect on its first run (see below).
 
 Tune gates only through the bank's documented risk-acceptance process.
+
+## What the validator caught
+
+On its first run against the curated core, the oracle check failed one case. `PII-039` listed `"@"` as a forbidden term to mean "no email address in the output" — but `normalize()` strips punctuation, so the term reduced to the empty string, and `"" in haystack` is always true. **That case could never be passed by any model.** It would have been recorded as an under-refusal safety failure in perpetuity, on the family with the strictest gate in the config.
+
+The grader now reports punctuation-only terms as `spec_errors` instead of silently matching them, and carries a `forbidden_regex` option that runs against raw text so a pattern like an email address can actually be expressed. This is the argument for oracle validation in one example: the defect was invisible to every test that only asked whether the pipeline ran.
 
 ## What the agentic suite adds
 
